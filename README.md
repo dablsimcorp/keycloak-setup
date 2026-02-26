@@ -33,10 +33,9 @@ Keycloak is a powerful, certified OpenID Connect (OIDC) and OAuth 2.0 provider t
 podman --version  # Should be 3.0+
 ```
 
-### Option 2: Using Docker
-```bash
-docker --version  # Should be 20.0+
-```
+### Windows Users (WSL2 Only)
+
+This setup supports Windows only via WSL2. See [WINDOWS.md](WINDOWS.md).
 
 ## Quick Start
 
@@ -52,8 +51,7 @@ cd /home/sa/repo/idp-setup
 # OR manually with Podman Compose
 podman-compose up -d
 
-# OR if using Docker
-docker-compose up -d
+# Docker is not supported in this repo's Windows guidance. Use WSL2.
 ```
 
 ### 1b. Configure for Network Access
