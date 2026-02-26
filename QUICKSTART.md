@@ -20,7 +20,7 @@ sudo chmod +x /usr/local/bin/podman-compose
 
 ---
 
-## Option 1: HTTPS (Recommended for Production)
+## Quick Start: HTTPS Default
 
 ### Step 1: Generate SSL Certificate
 ```bash
@@ -31,12 +31,12 @@ cd /home/sa/repo/idp-setup
 
 ### Step 2: Start Keycloak with HTTPS
 ```bash
-podman-compose -f docker-compose.nginx.yml up -d
+podman-compose up -d
 ```
 
 ### Step 3: Verify Services Are Running
 ```bash
-podman-compose -f docker-compose.nginx.yml ps
+podman-compose ps
 ```
 
 ### Step 4: Access Keycloak via HTTPS
@@ -49,39 +49,10 @@ podman-compose -f docker-compose.nginx.yml ps
 
 ### Step 5: View Logs
 ```bash
-podman-compose -f docker-compose.nginx.yml logs -f
+podman-compose logs -f
 ```
 
 ### Step 6: Stop Services
-```bash
-podman-compose -f docker-compose.nginx.yml down
-```
-
----
-
-## Option 2: HTTP (Development Only)
-
-For local HTTP-only access without HTTPS:
-
-### Step 1: Start Keycloak
-```bash
-cd /home/sa/repo/idp-setup
-./start.sh
-# OR manually: podman-compose up -d
-```
-
-### Step 2: Access Keycloak via HTTP
-- **URL**: http://localhost:8080
-- **Admin Console**: http://localhost:8080/admin
-- **Username**: `admin`
-- **Password**: `admin`
-
-### Step 3: View Logs
-```bash
-podman-compose logs -f keycloak
-```
-
-### Step 4: Stop Services
 ```bash
 podman-compose down
 ```
@@ -92,9 +63,9 @@ podman-compose down
 
 We've provided shell scripts for quick management:
 
-### Start Keycloak (HTTP)
+### Start Keycloak with Default HTTPS
 ```bash
-./start.sh
+./start.sh  # Note: for local HTTP-only, see alternatives
 ```
 
 ### Check Status
@@ -160,7 +131,7 @@ We've provided shell scripts for quick management:
 journalctl -u podman -f
 
 # Try starting with verbose output
-podman-compose -f docker-compose.nginx.yml up
+podman-compose up
 ```
 
 ### Port Already in Use
@@ -199,12 +170,8 @@ podman-compose up -d
 Verify services are healthy:
 
 ```bash
-# For HTTPS setup
+# Check HTTPS endpoint
 curl -k https://localhost/health/ready
-# Expected output: {"status":"UP"}
-
-# For HTTP setup
-curl http://localhost:8080/health/ready
 # Expected output: {"status":"UP"}
 
 # PostgreSQL connectivity
@@ -228,14 +195,9 @@ After Keycloak is running:
 
 ## Integration Examples
 
-### Get OpenID Configuration (HTTPS)
+### Get OpenID Configuration
 ```bash
 curl -k https://localhost/realms/my-realm/.well-known/openid-configuration
-```
-
-### Get OpenID Configuration (HTTP)
-```bash
-curl http://localhost:8080/realms/my-realm/.well-known/openid-configuration
 ```
 
 ### Get Access Token Example
@@ -253,11 +215,7 @@ curl -X POST https://localhost/realms/my-realm/protocol/openid-connect/token \
 ```javascript
 const OpenID = require('openid-client');
 
-// For HTTPS setup
 const config = await OpenID.discovery('https://localhost/realms/my-realm');
-
-// For HTTP setup
-const config = await OpenID.discovery('http://localhost:8080/realms/my-realm');
 const client = new OpenID.Client({
   client_id: 'my-client-id',
   client_secret: 'my-client-secret',

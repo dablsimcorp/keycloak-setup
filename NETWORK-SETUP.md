@@ -104,9 +104,9 @@ NGINX_HTTP_PORT=80
 NGINX_HTTPS_PORT=443
 ```
 
-4. **Start with nginx:**
+4. **Start Keycloak:**
 ```bash
-podman-compose -f docker-compose.nginx.yml up -d
+podman-compose up -d
 ```
 
 5. **Access:**

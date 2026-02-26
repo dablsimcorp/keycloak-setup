@@ -164,7 +164,7 @@ cd idp-setup
 
 # Update nginx config for HTTPS
 # Start with nginx
-podman-compose -f docker-compose.nginx.yml up -d
+podman-compose up -d
 ```
 
 ---

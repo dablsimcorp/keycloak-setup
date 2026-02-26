@@ -140,7 +140,7 @@ vim .env
 
 # Deploy with HTTPS
 ./generate-ssl.sh  # Or use Let's Encrypt
-podman-compose -f docker-compose.nginx.yml up -d
+podman-compose up -d
 ```
 
 ### Scenario 4: Multiple Environments
@@ -175,14 +175,7 @@ cd keycloak-setup
 
 ### Docker
 
-```bash
-git clone https://github.com/dablsimcorp/keycloak-setup.git
-cd keycloak-setup
-cp .env.example .env
-
-# Start with Docker Compose
-sudo docker-compose up -d
-```
+Not supported. Use Podman or WSL2 on Windows.
 
 ---
 

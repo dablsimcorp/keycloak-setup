@@ -92,7 +92,7 @@ Use WSL2 and run the standard Linux SSL helper:
 
 ```bash
 ./generate-ssl.sh
-podman-compose -f docker-compose.nginx.yml up -d
+podman-compose up -d
 ```
 
 ---

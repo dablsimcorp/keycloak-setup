@@ -41,7 +41,7 @@ This setup supports Windows only via WSL2. See [WINDOWS.md](WINDOWS.md).
 
 ### 1. Start Keycloak with HTTPS (Recommended)
 
-For secure HTTPS access with nginx reverse proxy:
+For secure HTTPS access with nginx reverse proxy (default):
 
 ```bash
 cd /home/sa/repo/idp-setup
@@ -50,7 +50,7 @@ cd /home/sa/repo/idp-setup
 ./generate-ssl.sh
 
 # Start with HTTPS enabled
-podman-compose -f docker-compose.nginx.yml up -d
+podman-compose up -d
 ```
 
 ### 2. Access Keycloak via HTTPS
@@ -74,8 +74,8 @@ To access Keycloak from another machine on your network:
 ./generate-ssl.sh
 
 # Restart with HTTPS
-podman-compose -f docker-compose.nginx.yml down
-podman-compose -f docker-compose.nginx.yml up -d
+podman-compose down
+podman-compose up -d
 ```
 
 Then access from other machines using: `https://your-machine-ip`
@@ -86,30 +86,17 @@ See [NETWORK-SETUP.md](NETWORK-SETUP.md) for detailed network configuration inst
 
 ```bash
 # Check running containers
-podman-compose -f docker-compose.nginx.yml ps
+podman-compose ps
 
 # View logs
-podman-compose -f docker-compose.nginx.yml logs -f
+podman-compose logs -f
 ```
 
 ### 5. Stop Keycloak
 
 ```bash
-podman-compose -f docker-compose.nginx.yml down
+podman-compose down
 ```
-
-## Accessing Keycloak
-
-### Local Development (HTTP, No SSL)
-
-If you prefer local HTTP-only access without HTTPS:
-
-```bash
-./start.sh
-# OR: podman-compose up -d
-```
-
-Access at: `http://localhost:8080`
 
 ## Create a Realm and Client
 
