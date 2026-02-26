@@ -39,50 +39,79 @@ This setup supports Windows only via WSL2. See [WINDOWS.md](WINDOWS.md).
 
 ## Quick Start
 
-### 1. Start Keycloak (Local Access Only)
+### 1. Start Keycloak with HTTPS (Recommended)
+
+For secure HTTPS access with nginx reverse proxy:
 
 ```bash
-# Navigate to this directory
 cd /home/sa/repo/idp-setup
 
-# Start with helper script (recommended)
-./start.sh
+# Generate SSL certificate (do this once)
+./generate-ssl.sh
 
-# OR manually with Podman Compose
-podman-compose up -d
-
-# Docker is not supported in this repo's Windows guidance. Use WSL2.
+# Start with HTTPS enabled
+podman-compose -f docker-compose.nginx.yml up -d
 ```
 
-### 1b. Configure for Network Access
+### 2. Access Keycloak via HTTPS
 
-To access Keycloak from other machines:
-
-```bash
-# Run the interactive configuration script
-./configure-network.sh
-```
-
-See [NETWORK-SETUP.md](NETWORK-SETUP.md) for detailed network configuration instructions.
-
-### 2. Verify Services
-
-```bash
-# Check running containers
-podman ps
-
-# View logs
-podman-compose logs -f keycloak
-```
-
-### 3. Access Keycloak
-
-- **URL**: http://localhost:8080
-- **Admin Console**: http://localhost:8080/admin
+- **URL**: https://localhost
+- **Admin Console**: https://localhost/admin  
 - **Username**: `admin`
 - **Password**: `admin`
 
-### 4. Create a Realm and Client
+**Note**: Self-signed certificate will show browser warning (expected). Click "Proceed Anyway" or "Advanced" to continue.
+
+### 3. For Network Access (Other Machines)
+
+To access Keycloak from another machine on your network:
+
+```bash
+# Configure your machine's IP or hostname
+./configure-network.sh
+
+# Regenerate SSL certificate for your IP/hostname
+./generate-ssl.sh
+
+# Restart with HTTPS
+podman-compose -f docker-compose.nginx.yml down
+podman-compose -f docker-compose.nginx.yml up -d
+```
+
+Then access from other machines using: `https://your-machine-ip`
+
+See [NETWORK-SETUP.md](NETWORK-SETUP.md) for detailed network configuration instructions.
+
+### 4. Verify Services
+
+```bash
+# Check running containers
+podman-compose -f docker-compose.nginx.yml ps
+
+# View logs
+podman-compose -f docker-compose.nginx.yml logs -f
+```
+
+### 5. Stop Keycloak
+
+```bash
+podman-compose -f docker-compose.nginx.yml down
+```
+
+## Accessing Keycloak
+
+### Local Development (HTTP, No SSL)
+
+If you prefer local HTTP-only access without HTTPS:
+
+```bash
+./start.sh
+# OR: podman-compose up -d
+```
+
+Access at: `http://localhost:8080`
+
+## Create a Realm and Client
 
 1. Log in to the Admin Console
 2. Click "Create Realm" → Name it (e.g., `my-realm`)

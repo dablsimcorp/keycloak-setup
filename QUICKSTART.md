@@ -1,103 +1,98 @@
-# Quick Start Guide - Keycloak with Podman/Docker
+# Quick Start Guide - Keycloak with Podman
 
-This guide provides step-by-step instructions to run Keycloak locally.
+This guide provides step-by-step instructions to run Keycloak locally with HTTPS support.
 
 ## Prerequisites
 
-Make sure you have one of these installed:
-- **Podman** 3.0+ (recommended)
-- **Docker** 20.0+ with Docker Desktop or Docker Daemon
-
-## Option 1: Using Podman (Recommended)
-
-### Step 1: Check Podman Installation
+You need **Podman** 3.0+ installed:
 ```bash
-podman --version
-podman ps
+podman --version  # Should show 3.0 or higher
 ```
 
-### Step 2: Start Services with Podman Compose
+## Installation
 
-First, install podman-compose if not available:
+First, install podman-compose if you don't have it:
 ```bash
 # On most Linux systems
-curl -o /usr/local/bin/podman-compose https://raw.githubusercontent.com/containers/podman-compose/main/podman-compose
-chmod +x /usr/local/bin/podman-compose
+sudo curl -o /usr/local/bin/podman-compose https://raw.githubusercontent.com/containers/podman-compose/main/podman-compose
+sudo chmod +x /usr/local/bin/podman-compose
 ```
 
-Then start the services:
+---
+
+## Option 1: HTTPS (Recommended for Production)
+
+### Step 1: Generate SSL Certificate
 ```bash
 cd /home/sa/repo/idp-setup
-podman-compose up -d
+./generate-ssl.sh
+# When prompted, press 'y' and enter your machine's IP or hostname
+```
+
+### Step 2: Start Keycloak with HTTPS
+```bash
+podman-compose -f docker-compose.nginx.yml up -d
 ```
 
 ### Step 3: Verify Services Are Running
 ```bash
-podman-compose ps
+podman-compose -f docker-compose.nginx.yml ps
 ```
 
-### Step 4: Access Keycloak
-- **URL**: http://localhost:8080
-- **Admin Console**: http://localhost:8080/admin
-- **Username**: admin
-- **Password**: admin
+### Step 4: Access Keycloak via HTTPS
+- **URL**: https://localhost
+- **Admin Console**: https://localhost/admin
+- **Username**: `admin`
+- **Password**: `admin`
+
+**Note**: Your browser will show a certificate warning (self-signed cert). Click "Proceed Anyway" or "Advanced" to continue.
 
 ### Step 5: View Logs
+```bash
+podman-compose -f docker-compose.nginx.yml logs -f
+```
+
+### Step 6: Stop Services
+```bash
+podman-compose -f docker-compose.nginx.yml down
+```
+
+---
+
+## Option 2: HTTP (Development Only)
+
+For local HTTP-only access without HTTPS:
+
+### Step 1: Start Keycloak
+```bash
+cd /home/sa/repo/idp-setup
+./start.sh
+# OR manually: podman-compose up -d
+```
+
+### Step 2: Access Keycloak via HTTP
+- **URL**: http://localhost:8080
+- **Admin Console**: http://localhost:8080/admin
+- **Username**: `admin`
+- **Password**: `admin`
+
+### Step 3: View Logs
 ```bash
 podman-compose logs -f keycloak
 ```
 
-### Step 6: Stop Services
+### Step 4: Stop Services
 ```bash
 podman-compose down
 ```
 
 ---
 
-## Option 2: Using Docker Compose
+## Helper Scripts
 
-### Step 1: Start Docker Service (if not running)
-```bash
-# On Linux with systemd
-sudo systemctl start docker
+We've provided shell scripts for quick management:
 
-# Or if using Docker Desktop, launch the application
-```
-
-### Step 2: Start Containers
-```bash
-cd /home/sa/repo/idp-setup
-sudo docker-compose up -d
-```
-
-### Step 3: Verify Services
-```bash
-sudo docker-compose ps
-```
-
-### Step 4: Access Keycloak
-- **URL**: http://localhost:8080
-- **Admin Console**: http://localhost:8080/admin
-- **Username**: admin
-- **Password**: admin
-
-### Step 5: View Logs
-```bash
-sudo docker-compose logs -f keycloak
-```
-
-### Step 6: Stop Services
-```bash
-sudo docker-compose down
-```
-
----
-
-## Option 3: Using Helper Scripts
-
-We've provided simple shell scripts to manage Keycloak:
-
-### Start Keycloak
+### Start Keycloak (HTTP)
 ```bash
 ./start.sh
 ```
@@ -112,13 +107,25 @@ We've provided simple shell scripts to manage Keycloak:
 ./stop.sh
 ```
 
+### Configure Network (for external access)
+```bash
+./configure-network.sh
+```
+
+### Generate SSL Certificates
+```bash
+./generate-ssl.sh
+```
+
+
 ---
 
 ## Common Tasks
 
 ### Access Keycloak Admin Console
-1. Navigate to: http://localhost:8080/admin
-2. Login with:
+1. For HTTPS: Navigate to https://localhost/admin
+2. For HTTP: Navigate to http://localhost:8080/admin
+3. Login with:
    - Username: `admin`
    - Password: `admin`
 
@@ -133,7 +140,7 @@ We've provided simple shell scripts to manage Keycloak:
 2. Name: `my-app-client`
 3. Protocol: `openid-connect`
 4. Client Type: `Web application`
-5. Configure Redirect URIs: `http://localhost:3000/*`
+5. Configure Redirect URIs: `https://localhost:3000/*` or `http://localhost:3000/*`
 6. Save and get credentials from "Credentials" tab
 
 ### Create a Test User
@@ -149,34 +156,26 @@ We've provided simple shell scripts to manage Keycloak:
 
 ### Services Don't Start
 ```bash
-# Check Docker/Podman logs
-journalctl -u docker -f          # Docker logs
-journalctl -u podman -f          # Podman logs (if available)
+# Check Podman logs
+journalctl -u podman -f
 
 # Try starting with verbose output
-docker-compose up --verbose
-
-# OR with Podman
-podman-compose up --verbose
+podman-compose -f docker-compose.nginx.yml up
 ```
 
 ### Port Already in Use
 ```bash
-# Find process using port 8080
+# For HTTPS setup (ports 80/443):
+sudo lsof -i :80
+sudo lsof -i :443
+
+# For HTTP setup (port 8080):
 lsof -i :8080
-sudo lsof -i :8080
-
-# Kill process (replace PID)
-kill -9 <PID>
-
-# OR modify the port in docker-compose.yml
-# Change: ports: - "8081:8080"
 ```
 
 ### PostgreSQL Connection Issues
 ```bash
 # Check PostgreSQL logs
-docker-compose logs postgres
 podman-compose logs postgres
 
 # Connect to PostgreSQL directly
@@ -187,11 +186,9 @@ psql -h localhost -U keycloak -d keycloak
 ### Reset Everything
 ```bash
 # Remove all containers and data
-docker-compose down -v
 podman-compose down -v
 
 # Then restart fresh
-docker-compose up -d
 podman-compose up -d
 ```
 
@@ -202,7 +199,11 @@ podman-compose up -d
 Verify services are healthy:
 
 ```bash
-# Keycloak health
+# For HTTPS setup
+curl -k https://localhost/health/ready
+# Expected output: {"status":"UP"}
+
+# For HTTP setup
 curl http://localhost:8080/health/ready
 # Expected output: {"status":"UP"}
 
@@ -217,7 +218,7 @@ nc -zv localhost 5432
 
 After Keycloak is running:
 
-1. ✅ Access http://localhost:8080/admin
+1. ✅ Access the Admin Console (https:// or http://)
 2. 📝 Create a new realm for your application
 3. 👥 Create test users
 4. 🔑 Create OIDC clients for your apps
@@ -227,14 +228,19 @@ After Keycloak is running:
 
 ## Integration Examples
 
-### Get Configuration
+### Get OpenID Configuration (HTTPS)
+```bash
+curl -k https://localhost/realms/my-realm/.well-known/openid-configuration
+```
+
+### Get OpenID Configuration (HTTP)
 ```bash
 curl http://localhost:8080/realms/my-realm/.well-known/openid-configuration
 ```
 
-### Get Access Token (Example)
+### Get Access Token Example
 ```bash
-curl -X POST http://localhost:8080/realms/my-realm/protocol/openid-connect/token \
+curl -X POST https://localhost/realms/my-realm/protocol/openid-connect/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "client_id=my-client" \
   -d "client_secret=your-secret" \
@@ -247,6 +253,10 @@ curl -X POST http://localhost:8080/realms/my-realm/protocol/openid-connect/token
 ```javascript
 const OpenID = require('openid-client');
 
+// For HTTPS setup
+const config = await OpenID.discovery('https://localhost/realms/my-realm');
+
+// For HTTP setup
 const config = await OpenID.discovery('http://localhost:8080/realms/my-realm');
 const client = new OpenID.Client({
   client_id: 'my-client-id',
