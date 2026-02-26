@@ -195,7 +195,7 @@ NGINX_HTTPS_PORT=443
 ```bash
 KC_HOSTNAME=localhost
 ```
-- Access: http://localhost:8080/admin
+- Access: https://localhost/admin
 - No firewall configuration needed
 - Most secure (not exposed to network)
 
@@ -304,8 +304,8 @@ nc -zv 192.168.1.100 8080
 
 5. **Check from local machine first:**
 ```bash
-curl http://localhost:8080/
-curl http://192.168.1.100:8080/  # Using your IP
+curl -k https://localhost/
+curl -k https://192.168.1.100/  # Using your IP
 ```
 
 ### SSL Certificate Errors

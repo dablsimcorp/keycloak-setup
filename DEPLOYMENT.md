@@ -119,7 +119,7 @@ cd idp-setup
 ./start.sh                  # Start services
 
 # Wait 30-60 seconds for Keycloak to initialize
-# Then access: http://<target-machine-ip>:8080/admin
+# Then access: https://<target-machine-ip>/admin
 ```
 
 ---
@@ -421,7 +421,7 @@ sudo ufw allow 8080/tcp
 ```bash
 # From external machine
 telnet target-machine-ip 8080
-curl http://target-machine-ip:8080/
+curl -k https://target-machine-ip/
 ```
 
 ### Issue: Database connection errors

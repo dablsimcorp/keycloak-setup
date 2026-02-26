@@ -45,9 +45,9 @@ cd keycloak-setup
 ### Accessing from Windows
 
 Once running in WSL2:
-- **From WSL2**: http://localhost:8080/admin
-- **From Windows Browser**: http://localhost:8080/admin
-- **From Network**: http://YOUR_WINDOWS_IP:8080/admin
+- **From WSL2**: https://localhost/admin
+- **From Windows Browser**: https://localhost/admin
+- **From Network**: https://YOUR_WINDOWS_IP/admin
 
 **Advantages**:
 - ✅ All scripts work perfectly
@@ -112,7 +112,7 @@ cd keycloak-setup
 ./deploy.sh
 
 # 4. Open Windows browser
-# http://localhost:8080/admin
+# https://localhost/admin
 ```
 
 ---

@@ -195,17 +195,17 @@ http://localhost:8080/realms/my-realm/.well-known/openid-configuration
 ```javascript
 const OpenID = require('openid-client');
 
-const config = await OpenID.discovery('http://localhost:8080/realms/my-realm');
+const config = await OpenID.discovery('https://localhost/realms/my-realm');
 const client = new OpenID.Client({
   client_id: 'your-client-id',
   client_secret: 'your-client-secret',
-  redirect_uris: ['http://localhost:3000/callback']
+  redirect_uris: ['https://localhost:3000/callback']  # Or your app's HTTPS callback URL
 });
 ```
 
 **cURL - Get Access Token:**
 ```bash
-curl -X POST http://localhost:8080/realms/my-realm/protocol/openid-connect/token \
+curl -X POST https://localhost/realms/my-realm/protocol/openid-connect/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "client_id=my-client" \
   -d "client_secret=secret" \
@@ -217,8 +217,8 @@ curl -X POST http://localhost:8080/realms/my-realm/protocol/openid-connect/token
 ## Health Checks
 
 Keycloak health endpoints:
-- **Startup**: `http://localhost:8080/health/live`
-- **Ready**: `http://localhost:8080/health/ready`
+- **Startup**: `https://localhost/health/live` (ignore self-signed cert warning with `-k`)
+- **Ready**: `https://localhost/health/ready` (ignore self-signed cert warning with `-k`)
 
 ## Port Mappings
 

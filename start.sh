@@ -33,8 +33,8 @@ $COMPOSE_CMD ps
 
 echo ""
 echo "🔗 Access Points:"
-echo "   Keycloak Admin Console: http://localhost:8080/admin"
-echo "   Keycloak Health Check:  http://localhost:8080/health/ready"
+echo "   Keycloak Admin Console: https://localhost/admin"
+echo "   Keycloak Health Check:  https://localhost/health/ready"
 echo "   PostgreSQL:             localhost:5432"
 echo ""
 echo "👤 Default Credentials:"

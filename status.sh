@@ -30,10 +30,10 @@ echo "🏥 Health Checks:"
 echo ""
 
 # Check Keycloak health
-if curl -s http://localhost:8080/health/ready > /dev/null 2>&1; then
-    echo "✅ Keycloak (http://localhost:8080): HEALTHY"
+if curl -sk https://localhost/health/ready > /dev/null 2>&1; then
+    echo "✅ Keycloak (https://localhost): HEALTHY"
 else
-    echo "❌ Keycloak (http://localhost:8080): UNAVAILABLE"
+    echo "❌ Keycloak (https://localhost): UNAVAILABLE"
 fi
 
 # Check PostgreSQL

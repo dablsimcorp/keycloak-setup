@@ -21,7 +21,7 @@ vim .env  # Edit KC_HOSTNAME and passwords
 ./deploy.sh
 ```
 
-**Access**: http://localhost:8080/admin (or your configured hostname)
+**Access**: https://localhost/admin (or your configured hostname)
 **Credentials**: admin / admin (change immediately!)
 
 ---
