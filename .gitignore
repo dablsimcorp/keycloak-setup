@@ -7,6 +7,9 @@
 postgres_data/
 keycloak_data/
 
+# SSL certificates (environment-specific, generated locally)
+nginx/ssl/
+
 # Docker/Podman
 .dockerignore
 docker-compose.override.yml
