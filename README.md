@@ -2,6 +2,17 @@
 
 This project sets up **Keycloak**, an open-source identity and access management solution, locally using Podman/Docker.
 
+## 🚀 Quick Deploy from GitHub
+
+```bash
+git clone https://github.com/dablsimcorp/keycloak-setup.git
+cd keycloak-setup
+cp .env.example .env  # Configure settings
+./deploy.sh           # Automated deployment
+```
+
+See [GITHUB-DEPLOY.md](GITHUB-DEPLOY.md) for complete deployment instructions from this repository.
+
 ## Overview
 
 Keycloak is a powerful, certified OpenID Connect (OIDC) and OAuth 2.0 provider that can be used as a standalone authentication server or integrated with other applications.
