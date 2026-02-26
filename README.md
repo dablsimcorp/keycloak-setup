@@ -314,17 +314,11 @@ For production:
 
 To deploy this Keycloak setup to other servers or machines:
 
-### Option 1: Quick Package & Deploy
+### Option 1: Quick Deploy from GitHub (Recommended)
 
 ```bash
-# On this machine - create deployment package
-./package-for-deployment.sh
-
-# Transfer to target machine
-scp keycloak-setup-*.tar.gz user@target-machine:~
-
-# On target machine - extract and deploy
-tar -xzf keycloak-setup-*.tar.gz
+# On target machine
+git clone https://github.com/dablsimcorp/keycloak-setup.git
 cd keycloak-setup
 ./deploy.sh
 ```
