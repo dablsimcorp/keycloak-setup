@@ -1,216 +1,374 @@
-# Keycloak Setup on Windows
+# Windows Setup Guide
 
-This guide explains how to run the Keycloak setup on Windows machines using WSL2.
+Run Keycloak on Windows using WSL2 (Windows Subsystem for Linux).
 
-## ⚠️ Windows Compatibility
+## ⚠️ Important
 
-**Bash Scripts**: The `.sh` scripts in this repository are designed for Linux/Unix and **require WSL2 on Windows**.
+This repository is designed for Linux. On Windows, you must use **WSL2**, which provides a full Linux environment.
 
----
+**Native Windows (without WSL2)**: Not supported. PowerShell/Batch scripts not provided.
 
-## WSL2 (Required on Windows)
+## What is WSL2?
 
-WSL2 provides a complete Linux environment on Windows with full compatibility.
+WSL2 is a lightweight Linux virtual machine integrated into Windows. It allows you to:
+- Run Linux applications natively on Windows
+- Use bash scripts and Docker/Podman
+- Share files between Windows and Linux
+- Access Linux services from Windows browser
 
-### Setup WSL2
+## Installation
 
-1. **Enable WSL2** (PowerShell as Administrator):
+### Step 1: Enable WSL2
+
+Open **PowerShell as Administrator** and run:
+
 ```powershell
 wsl --install
 ```
 
-2. **Restart your computer**
+This installs WSL2 and Ubuntu automatically.
 
-3. **Install Ubuntu** (or your preferred distro):
+### Step 2: Install Ubuntu (if not already installed)
+
 ```powershell
+# List available distributions
+wsl --list --online
+
+# Install Ubuntu 22.04 (recommended)
 wsl --install -d Ubuntu-22.04
+
+# Or use latest Ubuntu
+wsl --install -d Ubuntu
 ```
 
-4. **Launch Ubuntu** from Start Menu and set up username/password
+### Step 3: Launch Ubuntu
 
-### Deploy Keycloak in WSL2
+Open PowerShell or Command Prompt and run:
+```powershell
+wsl
+```
+
+Or search for "Ubuntu" in Start Menu.
+
+### Step 4: Set Username and Password
+
+First time you launch Ubuntu, you'll be prompted to create user account:
+```
+Enter new UNIX username: your_username
+Enter new UNIX password: your_password
+Retype new UNIX password: your_password
+```
+
+## Deploy Keycloak
+
+Inside WSL2 Ubuntu terminal:
+
+### Step 1: Install Git (if needed)
 
 ```bash
-# Inside WSL2 terminal
-cd ~
+sudo apt update
+sudo apt install -y git
+```
 
-# Clone the repository
+### Step 2: Clone Repository
+
+```bash
+cd ~
 git clone https://github.com/dablsimcorp/keycloak-setup.git
 cd keycloak-setup
-
-# Deploy
-./deploy.sh
 ```
 
-### Accessing from Windows
-
-Once running in WSL2:
-- **From WSL2**: https://localhost/admin
-- **From Windows Browser**: https://localhost/admin
-- **From Network**: https://YOUR_WINDOWS_IP/admin
-
-**Advantages**:
-- ✅ All scripts work perfectly
-- ✅ Native Linux performance
-- ✅ Easy to access from Windows
-- ✅ Can use Windows VS Code with WSL extension
-
----
-
-## Windows-Specific Instructions
-
-### Accessing Keycloak from Network
-
-To make Keycloak accessible from other machines:
-
-1. **Find your Windows IP**:
-```powershell
-ipconfig
-# Look for IPv4 Address
-```
-
-2. **Update .env**:
-```
-KC_HOSTNAME=192.168.1.100  # Your Windows IP
-```
-
-3. **Configure Windows Firewall**:
-```powershell
-# Run as Administrator
-New-NetFirewallRule -DisplayName "Keycloak HTTP" -Direction Inbound -LocalPort 8080 -Protocol TCP -Action Allow
-```
-
-4. **Restart Keycloak**:
-```powershell
-docker-compose down
-docker-compose up -d
-```
-
-### SSL/HTTPS on Windows
-
-Use WSL2 and run the standard Linux SSL helper:
+### Step 3: Install Podman/Docker
 
 ```bash
+./install-prerequisites.sh
+```
+
+This installs Podman and podman-compose automatically.
+
+### Step 4: Deploy
+
+```bash
+# Generate SSL certificate
 ./generate-ssl.sh
+
+# Start services
 podman-compose up -d
 ```
 
----
+### Step 5: Access from Windows
 
-## Quick Start for Windows Users (WSL2)
+In Windows browser, navigate to:
+```
+https://localhost/admin
+```
+
+Login:
+- **Username**: `admin`
+- **Password**: `admin`
+
+That's it! WSL2 handles the networking automatically.
+
+## Accessing from Other Windows Applications
+
+### From VS Code
+
+Install [Remote - WSL extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl):
+
+1. Click Remote indicator (bottom left)
+2. Select "Connect to WSL"
+3. Open folder: `/home/your_username/keycloak-setup`
+
+### From Windows Terminal
+
+You can open WSL2 terminal in Windows Terminal:
+
+1. Install [Windows Terminal](https://apps.microsoft.com/detail/windows-terminal/9N0DX20HK701)
+2. It automatically adds Ubuntu profile
+3. Select "Ubuntu" from dropdown to launch
+
+### From PowerShell
+
+Run Linux commands from PowerShell:
+```powershell
+wsl podman-compose up -d
+wsl ./status.sh
+```
+
+## Accessing from Network
+
+By default, Keycloak runs on `localhost` inside WSL2 and is accessible from Windows on the same machine, but **not from other machines** on your network.
+
+To access from other machines ([see NETWORK-SETUP.md](NETWORK-SETUP.md) for details):
+
+```bash
+# Inside WSL2
+./configure-network.sh
+./generate-ssl.sh
+podman-compose down
+podman-compose up -d
+```
+
+Then access from other machines using Windows machine's IP.
+
+## Useful WSL Commands
+
+### From PowerShell (Windows Terminal)
 
 ```powershell
-# 1. Install WSL2 (Run as Administrator in PowerShell)
+# Start WSL
+wsl
+
+# List WSL distributions
+wsl --list --verbose
+
+# Stop all WSL services
+wsl --shutdown
+
+# Restart WSL
+wsl --shutdown && wsl
+
+# Check WSL version
+wsl --version
+
+# Update WSL
+wsl --update
+```
+
+### From WSL (Ubuntu Terminal)
+
+```bash
+# Check if system is WSL2
+wsl.exe --version
+
+# Get Windows IP address (for accessing Windows from WSL)
+ipconfig.exe | grep "IPv4 Address"
+
+# Access Windows files from WSL
+cd /mnt/c/Users/YourName/Documents
+```
+
+## File Access
+
+### From WSL to Windows
+
+Files in Windows are available at `/mnt/C/`:
+```bash
+# Access Windows Documents
+cd /mnt/c/Users/YourName/Documents
+
+# Copy files to WSL home
+cp /mnt/c/path/to/file ~/keycloak-setup/
+```
+
+### From Windows to WSL
+
+WSL2 filesystem is available at `\\wsl$\Ubuntu\` in File Explorer:
+
+1. Open File Explorer
+2. Type: `\\wsl$\Ubuntu\home\your_username\keycloak-setup`
+3. Browse files and folders directly
+
+## Performance Tips
+
+WSL2 runs much faster on **Windows 11** vs Windows 10.
+
+### For Windows 10:
+
+- Use WSL2 disk for project files (not `/mnt/c/` Windows disk)
+- Keep heavy operations in WSL filesystem
+- Avoid frequent cross-filesystem I/O
+
+### For Windows 11:
+
+- Performance is excellent, minimal overhead
+- Can use either WSL disk or Windows disk
+- Use WSL home directory: `~/keycloak-setup`
+
+## Troubleshooting
+
+### WSL2 Not Installed
+
+```powershell
+# Check if WSL is installed
+wsl --version
+
+# If not installed, run
 wsl --install
-
-# 2. Restart computer
-
-# 3. Open "Ubuntu" from Start Menu
-cd ~
-git clone https://github.com/dablsimcorp/keycloak-setup.git
-cd keycloak-setup
-./deploy.sh
-
-# 4. Open Windows browser
-# https://localhost/admin
 ```
 
----
+### Podman Not Found
 
-## Troubleshooting Windows Issues
-
-### Issue: Port 8080 already in use
-
-**Check what's using the port**:
-```powershell
-netstat -ano | findstr :8080
+```bash
+# Inside WSL2 Ubuntu
+./install-prerequisites.sh
 ```
 
-**Kill the process** (replace PID):
-```powershell
-taskkill /PID <process_id> /F
+### Services Not Starting
+
+```bash
+# Check if containers are running
+podman-compose ps
+
+# View logs
+podman-compose logs keycloak
+
+# Try with sudo
+sudo podman-compose up -d
 ```
 
-**Or change the port** in docker-compose.yml:
-```yaml
-ports:
-  - "8081:8080"  # External:Internal
+### Can't Access from Windows Browser
+
+```bash
+# Inside WSL2, check if nginx is running
+podman-compose logs nginx
+
+# Check if port 443 is listening
+sudo netstat -tulpn | grep 443
+
+# Try accessing directly
+curl -k https://localhost/health/ready
 ```
 
-### Issue: Scripts don't run (*.sh)
+### Slow Performance
 
-**Solution**: Use WSL2. The scripts are Linux-only.
+This is normal on Windows 10. WSL2 can be slower than bare metal Linux.
 
-### Issue: Can't access from network
+Solutions:
+- Upgrade to Windows 11 (much faster)
+- Keep project files in WSL filesystem (`~/`), not Windows disk
+- Close unnecessary applications
 
-**Check**:
-1. Windows Firewall is allowing port 8080
-2. Docker is binding to 0.0.0.0 not 127.0.0.1
-3. Your Windows IP is correct in KC_HOSTNAME
+### Out of Disk Space
 
-**Allow in firewall**:
-```powershell
-New-NetFirewallRule -DisplayName "Keycloak" -Direction Inbound -LocalPort 8080 -Protocol TCP -Action Allow
+WSL2 can consume significant disk space. Check and manage:
+
+```bash
+# Check WSL disk usage
+df -h
+
+# Find large files
+du -sh ~/*
+
+# List Docker/Podman images
+podman images
+
+# Remove unused images
+podman image prune
 ```
 
-### Issue: WSL2 performance slow
+## Common Workflows
 
-**Solution**: Ensure you are using WSL2 and have adequate RAM/CPU assigned to WSL.
+### Daily Development
 
----
+```bash
+# Start WSL
+wsl
 
-## Development with VS Code on Windows
+# Navigate to project
+cd ~/keycloak-setup
 
-1. **Install VS Code with WSL extension**:
-   - Install "Remote - WSL" extension
+# Check status
+./status.sh
 
-2. **Open project in WSL**:
+# View logs
+podman-compose logs -f keycloak
 ```
-File → Open Folder → \\wsl$\Ubuntu\home\username\keycloak-setup
+
+### Making Changes
+
+```bash
+# Edit files in VS Code with Remote-WSL extension
+code .
+
+# Apply changes
+podman-compose restart keycloak
+
+# Check logs
+podman-compose logs keycloak
 ```
 
-3. **Use WSL terminal** inside VS Code
+### Stopping/Starting Services
 
-4. **All commands work as in Linux**
+```bash
+# Stop
+podman-compose down
 
----
+# Start again
+podman-compose up -d
 
-## Production on Windows Server
+# Full restart
+podman-compose down && podman-compose up -d
+```
 
-For Windows Server deployments:
+## Advanced: Docker Instead of Podman
 
-1. **Use Docker Desktop or Podman Desktop**
-2. **Run as Windows Service** (Docker Desktop auto-starts)
-3. **Configure Windows Firewall properly**
-4. **Use nginx on Windows** or IIS as reverse proxy
-5. **Consider using Linux VMs** for production (more stable)
+WSL2 supports both Docker and Podman. If you prefer Docker:
 
----
+```bash
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+newgrp docker
 
-## Summary
+# Then use docker-compose instead of podman-compose
+docker-compose up -d
+```
 
-**Windows Support**: WSL2 is required for this repository. It provides full Linux compatibility and supports all scripts.
+## Next Steps
 
----
+1. **Change Admin Password** - In Keycloak, change default credentials
+2. **Create Realm** - Set up a new realm for your applications
+3. **Configure Clients** - Register OAuth 2.0 / OIDC clients
+4. **For Network Access** - See [NETWORK-SETUP.md](NETWORK-SETUP.md)
 
 ## Resources
 
-- **WSL2 Installation**: https://learn.microsoft.com/en-us/windows/wsl/install
-- **Git for Windows**: https://git-scm.com/download/win
+- [WSL2 Official Docs](https://docs.microsoft.com/en-us/windows/wsl/)
+- [Keycloak Quick Start](QUICKSTART.md)
+- [Network Configuration](NETWORK-SETUP.md)
 
 ---
 
-## Quick Command Reference
-
-### WSL2 Commands
-```bash
-# Same as Linux
-./deploy.sh
-./start.sh
-./stop.sh
-./status.sh
-```
-
----
-
-**Need Help?** Check the main documentation or open an issue on GitHub.
+**WSL2 is fully supported. Make sure you're using WSL2 (not WSL1).**

@@ -1,268 +1,199 @@
-# Keycloak Identity Provider - Local Setup
+# Keycloak Identity Provider Setup
 
-This project sets up **Keycloak**, an open-source identity and access management solution, locally using Podman/Docker.
+A complete, containerized deployment of Keycloak using Podman/Docker with PostgreSQL and HTTPS support.
 
-## 🚀 Quick Deploy from GitHub
+## What is Keycloak?
 
-```bash
-git clone https://github.com/dablsimcorp/keycloak-setup.git
-cd keycloak-setup
-cp .env.example .env  # Configure settings
-./deploy.sh           # Automated deployment
+[Keycloak](https://www.keycloak.org/) is an open-source identity and access management (IAM) platform that provides:
+
+- **OpenID Connect & OAuth 2.0** - Standard authentication protocols
+- **User Management** - User accounts, roles, and permissions
+- **Social Login** - Integration with Google, GitHub, Facebook, etc.
+- **Multi-Factor Authentication** - TOTP, WebAuthn, etc.
+- **Realm Separation** - Multi-tenant support
+- **User Federation** - LDAP, Active Directory integration
+- **REST Admin API** - Programmatic access
+
+Perfect for:
+- Single Sign-On (SSO) across applications
+- Microservices authentication
+## Detailed Guides
+
+| Guide | Purpose |
+|-------|---------|
+| [QUICKSTART.md](QUICKSTART.md) | Step-by-step deployment guide |
+| [WINDOWS.md](WINDOWS.md) | Windows (WSL2) setup instructions |
+| [NETWORK-SETUP.md](NETWORK-SETUP.md) | Configure external access |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Deploy to other machines |
+
+## What's Included
+
+```
+keycloak-setup/
+├── docker-compose.yml         # Service orchestration (Keycloak + PostgreSQL + Nginx)
+├── nginx/
+│   ├── nginx.conf            # HTTP/HTTPS reverse proxy
+│   └── ssl/                  # SSL certificates directory
+├── .env.example              # Configuration template
+├── install-prerequisites.sh  # Install Podman/Docker
+├── generate-ssl.sh           # Generate SSL certificates
+├── configure-network.sh      # Configure network access
+├── start.sh                  # Start services
+├── stop.sh                   # Stop services
+├── status.sh                 # Check service health
+└── deploy.sh                 # Automated deployment
 ```
 
-See [GITHUB-DEPLOY.md](GITHUB-DEPLOY.md) for complete deployment instructions from this repository.
+## Common Tasks
 
-## Overview
-
-Keycloak is a powerful, certified OpenID Connect (OIDC) and OAuth 2.0 provider that can be used as a standalone authentication server or integrated with other applications.
-
-**Key Features:**
-- OpenID Connect and OAuth 2.0 support
-- User federation and social login
-- Strong authentication (2FA, WebAuthn)
-- User and role management
-- Realm separation for multi-tenancy
-- REST Admin API
-- Extensible through plugins and themes
-
-## Prerequisites
-
-### Option 1: Using Podman (Preferred)
+### Check Service Status
 ```bash
-podman --version  # Should be 3.0+
-```
-
-### Windows Users (WSL2 Only)
-
-This setup supports Windows only via WSL2. See [WINDOWS.md](WINDOWS.md).
-
-## Quick Start
-
-### 1. Start Keycloak with HTTPS (Recommended)
-
-For secure HTTPS access with nginx reverse proxy (default):
-
-```bash
-cd /home/sa/repo/idp-setup
-
-# Generate SSL certificate (do this once)
-./generate-ssl.sh
-
-# Start with HTTPS enabled
-podman-compose up -d
-```
-
-### 2. Access Keycloak via HTTPS
-
-- **URL**: https://localhost
-- **Admin Console**: https://localhost/admin  
-- **Username**: `admin`
-- **Password**: `admin`
-
-**Note**: Self-signed certificate will show browser warning (expected). Click "Proceed Anyway" or "Advanced" to continue.
-
-### 3. For Network Access (Other Machines)
-
-To access Keycloak from another machine on your network:
-
-```bash
-# Configure your machine's IP or hostname
-./configure-network.sh
-
-# Regenerate SSL certificate for your IP/hostname
-./generate-ssl.sh
-
-# Restart with HTTPS
-podman-compose down
-podman-compose up -d
-```
-
-Then access from other machines using: `https://your-machine-ip`
-
-See [NETWORK-SETUP.md](NETWORK-SETUP.md) for detailed network configuration instructions.
-
-### 4. Verify Services
-
-```bash
-# Check running containers
 podman-compose ps
-
-# View logs
-podman-compose logs -f
-```
-
-### 5. Stop Keycloak
-
-```bash
-podman-compose down
-```
-
-## Create a Realm and Client
-
-1. Log in to the Admin Console
-2. Click "Create Realm" → Name it (e.g., `my-realm`)
-3. Navigate to Clients → Create Client
-4. Configure redirect URIs for your application
-5. Get the Client ID and Secret from the Credentials tab
-
-## Configuration
-
-### Environment Variables
-
-Edit `.env` to customize:
-
-```bash
-# Keycloak Admin
-KEYCLOAK_ADMIN=admin
-KEYCLOAK_ADMIN_PASSWORD=admin
-
-# PostgreSQL
-POSTGRES_DB=keycloak
-POSTGRES_USER=keycloak
-POSTGRES_PASSWORD=keycloak
-
-# Hostname
-KC_HOSTNAME=localhost
-```
-
-### Database Options
-
-**Current Setup**: PostgreSQL 16 (production-ready)
-
-**Alternative - Embedded H2** (development only):
-```yaml
-# In docker-compose.yml, modify keycloak service:
-command: 
-  - "start-dev"
-  # H2 is built-in for start-dev
-```
-
-## Managing Services
-
-### Start Services
-```bash
-./start.sh
-# Or: podman-compose up -d
-```
-
-### Configure Network Access
-```bash
-./configure-network.sh
-```
-
-### Generate SSL Certificates
-```bash
-./generate-ssl.sh
-```
-
-### Stop Services
-```bash
-./stop.sh
-# Or: podman-compose down
-```
-
-### Stop and Remove Data
-```bash
-podman-compose down -v  # -v removes volumes
+./status.sh
 ```
 
 ### View Logs
 ```bash
 podman-compose logs -f keycloak
-podman-compose logs -f postgres
 ```
 
-### Shell Access
+### Stop Services
 ```bash
-# Access Keycloak container
-podman exec -it keycloak /bin/bash
-
-# Access PostgreSQL
-podman exec -it keycloak-postgres psql -U keycloak -d keycloak
+podman-compose down
 ```
 
-## Integration with Applications
-
-### OpenID Connect Discovery
-```
-http://localhost:8080/realms/my-realm/.well-known/openid-configuration
-```
-
-### Common Integration Patterns
-
-**Node.js/Express with OpenID Client:**
-```javascript
-const OpenID = require('openid-client');
-
-const config = await OpenID.discovery('https://localhost/realms/my-realm');
-const client = new OpenID.Client({
-  client_id: 'your-client-id',
-  client_secret: 'your-client-secret',
-  redirect_uris: ['https://localhost:3000/callback']  # Or your app's HTTPS callback URL
-});
-```
-
-**cURL - Get Access Token:**
+### Access from Another Machine
 ```bash
-curl -X POST https://localhost/realms/my-realm/protocol/openid-connect/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "client_id=my-client" \
-  -d "client_secret=secret" \
-  -d "username=user" \
-  -d "password=password" \
-  -d "grant_type=password"
+# 1. Find your IP
+hostname -I
+
+# 2. Configure
+./configure-network.sh
+
+# 3. Update SSL certificate for your IP
+./generate-ssl.sh
+
+# 4. Restart
+podman-compose down
+podman-compose up -d
+
+# 5. Access via: https://YOUR_IP/admin
 ```
 
-## Health Checks
+## Configuration Files
 
-Keycloak health endpoints:
-- **Startup**: `https://localhost/health/live` (ignore self-signed cert warning with `-k`)
-- **Ready**: `https://localhost/health/ready` (ignore self-signed cert warning with `-k`)
+### .env - Environment Settings
+Main configuration file. Copy from `.env.example`:
+```bash
+cp .env.example .env
+nano .env  # Edit as needed
+```
 
-## Port Mappings
+Key variables:
+- `KC_HOSTNAME` - Server IP or domain
+- `KEYCLOAK_ADMIN_PASSWORD` - Admin password
+- `POSTGRES_PASSWORD` - Database password
 
-| Service | Container Port | Host Port |
-|---------|----------------|-----------|
-| Keycloak | 8080 | 8080 |
-| PostgreSQL | 5432 | 5432 |
+### docker-compose.yml - Services
+Defines three services:
+1. **keycloak** - Identity provider (Port 8080 internally)
+2. **postgres** - Database (Port 5432 internally)
+3. **nginx** - Reverse proxy (Port 80→443, external)
+
+All services are containerized and isolated.
+
+## Ports
+
+| Port | Service | Purpose |
+|------|---------|---------|
+| 80 | Nginx | HTTP (redirects to HTTPS) |
+| 443 | Nginx | HTTPS (Keycloak) |
+| 5432 | PostgreSQL | Database (internal only) |
+
+External access: **HTTPS only** (port 443)
+Internal access: HTTP redirected to HTTPS
 
 ## Troubleshooting
 
-### Keycloak not starting
+### podman-compose command not found
 ```bash
-# Check logs
+# Install podman-compose
+sudo curl -o /usr/local/bin/podman-compose \
+  https://raw.githubusercontent.com/containers/podman-compose/main/podman-compose
+sudo chmod +x /usr/local/bin/podman-compose
+```
+
+### Port 80/443 already in use
+```bash
+# Find what's using the port
+sudo lsof -i :80
+sudo lsof -i :443
+
+# Or use different ports in .env
+# Update compose file to use different host ports
+```
+
+### SSL Certificate Warning
+This is expected with self-signed certificates. For production:
+1. Use Let's Encrypt certificates
+2. Update `nginx/ssl/cert.pem` and `nginx/ssl/key.pem`
+3. Or configure automatic renewal
+
+### Keycloak not accessible
+```bash
+# Check container status
 podman-compose logs keycloak
 
-# Verify PostgreSQL is healthy
-podman-compose ps
+# Verify nginx is running
+podman-compose logs nginx
+
+# Test connectivity
+curl -k https://localhost/health/ready
 ```
 
-### Database connection issues
-```bash
-# Check PostgreSQL logs
-podman-compose logs postgres
+## Production Considerations
 
-# Verify credentials in .env
-cat .env
-```
+For production deployments:
 
-### Port already in use
-```bash
-# Find process using port 8080
-lsof -i :8080
+1. **Use real SSL certificates** - Replace self-signed with Let's Encrypt or commercial cert
+2. **Change default passwords** - Update admin and database passwords in `.env`
+3. **Configure backups** - Regular PostgreSQL backups
+4. **Set proper firewall rules** - Only allow HTTPS (port 443)
+5. **Use strong credentials** - Generate secure random passwords
+6. **Monitor logs** - Set up log aggregation
+7. **Configure authentication themes** - Customize login pages
+8. **Set up realms and clients** - Configure for your applications
 
-# Change port in docker-compose.yml:
-ports:
-  - "8081:8080"  # External:Internal
-```
+## Next Steps
 
-### Reset to Clean State
-```bash
-# Stop and remove everything
-podman-compose down -v
+1. **Activate Admin Account** - Change default password immediately
+2. **Create Realms** - Organize users and applications by realm
+3. **Configure Clients** - Register OAuth 2.0 / OIDC clients
+4. **Set Up Authentication** - Configure 2FA, social login, etc.
+5. **Integrate Applications** - Connect services to Keycloak
 
-# Start fresh
+## Documentation
+
+- [Keycloak Official Docs](https://www.keycloak.org/documentation.html)
+- [OIDC Authentication](https://www.keycloak.org/docs/latest/server_admin/)
+- [Docker Hub - Keycloak](https://hub.docker.com/r/keycloak/keycloak)
+
+## License
+
+This setup is provided as-is. Keycloak is licensed under Apache License 2.0.
+
+## Support
+
+For issues:
+- Check [Keycloak Issues](https://github.com/keycloak/keycloak/issues)
+- Review logs: `podman-compose logs`
+- See [QUICKSTART.md](QUICKSTART.md) for common solutions
+
+---
+
+**Version**: 1.0  
+**Keycloak**: 26.x  
+**Last Updated**: 2026-02-27
 podman-compose up -d
 ```
 

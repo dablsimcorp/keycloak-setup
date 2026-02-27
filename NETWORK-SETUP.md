@@ -1,10 +1,17 @@
-# Network Access Configuration Guide
+# Network Configuration Guide
 
-This guide explains how to expose your Keycloak instance to other machines on your network or the internet.
+Configure Keycloak for access from other machines on your network.
 
-## Quick Setup: Network Access
+## Overview
 
-### 1. Auto-Configure for Network Access
+By default, Keycloak listens only on `localhost` (127.0.0.1). To access from other machines, you need to:
+
+1. Configure your machine's IP address
+2. Generate SSL certificate for that IP
+3. Allow incoming connections (firewall)
+4. Access from other machines
+
+## Quick Setup
 
 Run the interactive configuration script:
 
@@ -13,30 +20,381 @@ Run the interactive configuration script:
 ```
 
 This will:
-- Detect your machine's IP address
-- Let you choose local-only or network access mode
-- Update configuration automatically
-- Optionally restart Keycloak with new settings
+1. Detect your machine's IP
+2. Ask if you want network access or local-only
+3. Add IP to .env file (variable: `KC_HOSTNAME`)
+4. Update Nginx configuration
 
-### 2. Manual Configuration
-
-Edit `.env` file:
-
+Then:
 ```bash
-# For network access, set to your machine's IP or domain
-KC_HOSTNAME=192.168.1.100  # Replace with your actual IP
+./generate-ssl.sh    # Generate certificate for your IP
+podman-compose down
+podman-compose up -d # Restart with new configuration
 ```
 
-Restart Keycloak:
+Done! Access from another machine using your IP.
 
+## Manual Setup
+
+### Step 1: Find Your Machine's IP
+
+**On Linux:**
 ```bash
-podman stop keycloak && podman rm keycloak
-./start.sh
+hostname -I | awk '{print $1}'
 ```
 
-### 3. Configure Firewall
+**On Mac:**
+```bash
+ifconfig | grep "inet " | grep -v 127.0.0.1
+```
 
-Allow incoming connections on port 8080:
+**On Windows (WSL2):**
+```bash
+# From WSL2
+hostname -I
+
+# Get Windows IP (for accessing from other machines)
+ipconfig.exe | grep "IPv4 Address"
+```
+
+Example output: `192.168.1.100`
+
+### Step 2: Configure Environment
+
+Edit `.env`:
+
+```bash
+nano .env
+```
+
+Find and update:
+```bash
+KC_HOSTNAME=192.168.1.100    # Your machine's IP
+```
+
+### Step 3: Generate SSL Certificate for Your IP
+
+```bash
+./generate-ssl.sh
+```
+
+When prompted, enter your IP address (not localhost):
+```
+Enter hostname/IP for certificate: 192.168.1.100
+```
+
+This generates SSL certificate valid for that IP.
+
+### Step 4: Restart Keycloak
+
+```bash
+podman-compose down
+podman-compose up -d
+```
+
+### Step 5: Configure Firewall (Optional but Recommended)
+
+Allow incoming HTTPS connections on port 443:
+
+**Ubuntu/Debian (UFW):**
+```bash
+sudo ufw allow 443/tcp
+sudo ufw allow 80/tcp       # For HTTP→HTTPS redirect
+sudo ufw status
+```
+
+**Fedora/CentOS/RHEL (firewalld):**
+```bash
+sudo firewall-cmd --add-port=443/tcp --permanent
+sudo firewall-cmd --add-port=80/tcp --permanent
+sudo firewall-cmd --reload
+sudo firewall-cmd --list-ports
+```
+
+**Check if firewall is active:**
+```bash
+# Ubuntu
+sudo ufw status
+
+# RHEL-based
+sudo firewall-cmd --state
+```
+
+### Step 6: Access from Other Machines
+
+From any computer on the same network:
+
+```
+https://192.168.1.100/admin
+```
+
+Browser will show certificate warning (expected). Click through to continue.
+
+## Using Hostname Instead of IP
+
+For more user-friendly access, use a hostname instead of IP.
+
+### Method 1: mDNS (Recommended for Local Networks)
+
+Most modern systems support `.local` domains:
+
+```bash
+# On your machine
+./configure-network.sh
+# When prompted, enter: keycloak.local
+
+./generate-ssl.sh
+# Enter: keycloak.local
+
+# Access from other machines
+https://keycloak.local/admin
+```
+
+Works automatically if:
+- All machines on same network
+- Running macOS or Windows with Bonjour
+- Linux with avahi-daemon installed
+
+### Method 2: DNS Record
+
+For proper domain (e.g., keycloak.example.com):
+
+1. Add DNS A record:
+   ```
+   keycloak.example.com  A  192.168.1.100
+   ```
+
+2. Update .env:
+   ```bash
+   KC_HOSTNAME=keycloak.example.com
+   ```
+
+3. Generate certificate:
+   ```bash
+   ./generate-ssl.sh
+   # Enter: keycloak.example.com
+   ```
+
+4. Restart:
+   ```bash
+   podman-compose down
+   podman-compose up -d
+   ```
+
+5. Access:
+   ```
+   https://keycloak.example.com/admin
+   ```
+
+### Method 3: Local /etc/hosts File
+
+For local machines without DNS:
+
+**On each client machine**, edit `/etc/hosts`:
+
+```bash
+# MacOS/Linux
+sudo nano /etc/hosts
+# Add: 192.168.1.100 keycloak.local
+
+# Windows
+notepad C:\Windows\System32\drivers\etc\hosts
+# Add: 192.168.1.100 keycloak.local
+```
+
+Then access:
+```
+https://keycloak.local/admin
+```
+
+## Production: HTTPS with Real Certificates
+
+For production deployments, replace self-signed certificates with real ones.
+
+### Using Let's Encrypt
+
+For domains accessible from internet:
+
+```bash
+# Install certbot
+sudo apt install -y certbot
+
+# Get certificate for your domain
+sudo certbot certonly --standalone -d keycloak.example.com
+
+# Copy to nginx/ssl/
+sudo cp /etc/letsencrypt/live/keycloak.example.com/fullchain.pem nginx/ssl/cert.pem
+sudo cp /etc/letsencrypt/live/keycloak.example.com/privkey.pem nginx/ssl/key.pem
+sudo chown $(whoami): nginx/ssl/*
+
+# Restart nginx
+podman-compose restart nginx
+```
+
+### Using Commercial Certificate
+
+If you have a commercial certificate:
+
+```bash
+# Copy your certificate files
+cp /path/to/your-cert.pem nginx/ssl/cert.pem
+cp /path/to/your-key.pem nginx/ssl/key.pem
+
+# Restart nginx
+podman-compose restart nginx
+```
+
+## Testing Network Access
+
+### From Same Machine (to verify setup)
+
+```bash
+# Test from machine running Keycloak
+curl -k https://192.168.1.100/health/ready
+```
+
+### From Other Machines
+
+```bash
+# Test connectivity
+curl -k https://192.168.1.100/health/ready
+
+# Open in browser
+https://192.168.1.100/admin
+```
+
+### Troubleshooting
+
+If you can't access from another machine:
+
+```bash
+# 1. Check if Keycloak is running
+podman-compose ps
+
+# 2. Check if nginx is listening on correct IP
+sudo netstat -tulpn | grep -E "(80|443)"
+
+# 3. Test from localhost first
+curl -k https://localhost/health/ready
+
+# 4. Check nginx logs
+podman-compose logs nginx
+
+# 5. Check firewall
+sudo ufw status          # Ubuntu
+sudo firewall-cmd --list-ports  # RHEL
+
+# 6. Verify .env has correct IP
+grep KC_HOSTNAME .env
+```
+
+## Router Configuration (Advanced)
+
+To access from outside your local network:
+
+### 1. Configure Port Forwarding on Router
+
+Forward external port 443 to machine port 443:
+- External Port: 443
+- Internal IP: 192.168.1.100
+- Internal Port: 443
+- Protocol: TCP
+
+### 2. Use Dynamic DNS (if home network)
+
+If your ISP changes your IP:
+- Set up Dynamic DNS service (DynDNS, No-IP, etc.)
+- Point domain to your dynamic IP
+- Update SSL certificate when public IP changes
+
+### 3. Use Real Domain and Certificate
+
+```bash
+# Get Let's Encrypt certificate for your public domain
+certbot certonly --standalone -d keycloak.yourdomain.com
+
+# Copy to nginx/ssl/
+cp /etc/letsencrypt/live/keycloak.yourdomain.com/fullchain.pem nginx/ssl/cert.pem
+cp /etc/letsencrypt/live/keycloak.yourdomain.com/privkey.pem nginx/ssl/key.pem
+
+# Restart
+podman-compose restart nginx
+```
+
+### 4. Configure Keycloak for External Domain
+
+Update .env:
+```bash
+KC_HOSTNAME=keycloak.yourdomain.com
+```
+
+Restart:
+```bash
+podman-compose down && podman-compose up -d
+```
+
+## Common Scenarios
+
+### Access from Office Network
+
+1. Find machine IP: `hostname -I`
+2. Configure: `./configure-network.sh` → enter IP
+3. Generate cert: `./generate-ssl.sh` → enter IP
+4. Restart: `podman-compose down && podman-compose up -d`
+5. From office, access: `https://192.168.1.100/admin`
+
+### Access from Home and Office
+
+Use hostname instead of IP:
+
+1. Configure: `./configure-network.sh` → enter `keycloak.local`
+2. Generate: `./generate-ssl.sh` → enter `keycloak.local`
+3. Restart: `podman-compose down && podman-compose up -d`
+4. Add to `/etc/hosts` on client machines: `192.168.1.100 keycloak.local`
+5. Access: `https://keycloak.local/admin`
+
+### Access from Microservices
+
+If your services are in same Docker network:
+
+```bash
+# In your service's docker-compose.yml
+services:
+  my-service:
+    environment:
+      KEYCLOAK_URL: https://keycloak:443  # Use service name
+```
+
+## Monitoring Network Access
+
+```bash
+# View incoming connections
+sudo netstat -tupn | grep ESTABLISHED
+
+# Monitor bandwidth
+iftop
+
+# Check which services are listening
+sudo netstat -tulpn
+```
+
+## Security Notes
+
+- Self-signed certificates show warnings (expected)
+- For production: use real certificates (Let's Encrypt)
+- Firewall: only open ports you need (80, 443)
+- HTTPS: always use HTTPS (port 443) in production
+- Passwords: change default admin password immediately
+
+## Next Steps
+
+- [Quick Start](QUICKSTART.md) - Full deployment guide
+- [Deployment](DEPLOYMENT.md) - Deploy to other servers
+- [Keycloak Docs](https://www.keycloak.org/documentation) - Official documentation
+
+---
+
+**Need help?** Check [README.md](README.md#troubleshooting) troubleshooting section.
 
 **Ubuntu/Debian (UFW):**
 ```bash
